@@ -6,6 +6,11 @@ import {
   useState,
 } from 'react';
 import Globe, { type GlobeMethods } from 'react-globe.gl';
+import {
+  getCountryName,
+  loadCountryBoundaries,
+  type CountryBoundary,
+} from '../../services/countryBoundaries';
 import type { TravelPlace } from '../../types/travel';
 
 export interface GlobeHandle {
@@ -61,6 +66,8 @@ export const TravelGlobe = forwardRef<GlobeHandle, Props>(function TravelGlobe(
   const globe = useRef<GlobeMethods | undefined>(undefined);
   const wrap = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+  const [countries, setCountries] = useState<CountryBoundary[]>([]);
+  const [hoveredCountry, setHoveredCountry] = useState<CountryBoundary | null>(null);
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver(([entry]) => {
@@ -68,6 +75,19 @@ export const TravelGlobe = forwardRef<GlobeHandle, Props>(function TravelGlobe(
     });
     if (wrap.current) resizeObserver.observe(wrap.current);
     return () => resizeObserver.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    loadCountryBoundaries(controller.signal)
+      .then(setCountries)
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        // Borders are an enhancement: texture, markers and navigation stay usable
+        // if the public Natural Earth file is temporarily unavailable.
+        console.warn('Travel Globe: country boundaries unavailable', error);
+      });
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -110,6 +130,25 @@ export const TravelGlobe = forwardRef<GlobeHandle, Props>(function TravelGlobe(
         bumpImageUrl="https://unpkg.com/three-globe/example/img/earth-topology.png"
         atmosphereColor="#58a6ff"
         atmosphereAltitude={0.18}
+        polygonsData={countries}
+        polygonAltitude={(boundary: object) => boundary === hoveredCountry ? 0.008 : 0.006}
+        polygonCapColor={(boundary: object) => boundary === hoveredCountry
+          ? 'rgba(126, 220, 202, 0.10)'
+          : 'rgba(255, 255, 255, 0.005)'}
+        polygonSideColor={() => 'rgba(0, 0, 0, 0)'}
+        polygonStrokeColor={(boundary: object) => boundary === hoveredCountry
+          ? 'rgba(185, 246, 234, 0.92)'
+          : 'rgba(210, 226, 238, 0.42)'}
+        polygonLabel={(boundary: object) => getCountryName(boundary as CountryBoundary)}
+        polygonsTransitionDuration={180}
+        onPolygonHover={(boundary: object | null) => {
+          setHoveredCountry(boundary as CountryBoundary | null);
+        }}
+        onPolygonClick={(
+          _boundary: object,
+          _event: MouseEvent,
+          { lat, lng }: { lat: number; lng: number },
+        ) => onEarthClick(lat, lng)}
         htmlElementsData={places}
         htmlLat="latitude"
         htmlLng="longitude"
