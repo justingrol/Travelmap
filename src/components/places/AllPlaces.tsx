@@ -1,4 +1,4 @@
-import { ArrowUpDown, MapPin, Search } from 'lucide-react';
+import { ArrowUpDown, MapPin, Search, Star } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { PlaceFilter, TravelPlace } from '../../types/travel';
 import { PlaceComparison } from './PlaceComparison';
@@ -10,6 +10,8 @@ interface Props {
   statusFilter: PlaceFilter;
   countryFilter: string;
   countries: string[];
+  favoritesOnly:boolean;
+  onFavoritesChange:(value:boolean)=>void;
   onStatusChange: (filter: PlaceFilter) => void;
   onCountryChange: (country: string) => void;
   onOpen: (place: TravelPlace) => void;
@@ -21,6 +23,8 @@ export function AllPlaces({
   statusFilter,
   countryFilter,
   countries,
+  favoritesOnly,
+  onFavoritesChange,
   onStatusChange,
   onCountryChange,
   onOpen,
@@ -48,6 +52,7 @@ export function AllPlaces({
       .filter((place) => region === 'all' || place.region === region)
       .filter((place) => tag === 'all' || place.tags.includes(tag))
       .filter((place)=>continent==='all'||place.continent===continent)
+      .filter((place)=>!favoritesOnly||place.favorite===true)
       .filter((place) => !normalizedQuery || place.name.toLocaleLowerCase().includes(normalizedQuery))
       .sort((a, b) => {
         if (sort === 'country') return a.country.localeCompare(b.country) || a.name.localeCompare(b.name);
@@ -55,7 +60,7 @@ export function AllPlaces({
         if (sort === 'status') return a.status.localeCompare(b.status) || a.name.localeCompare(b.name);
         return a.name.localeCompare(b.name);
       });
-  }, [places, statusFilter, countryFilter, region, tag, continent, query, sort]);
+  }, [places, statusFilter, countryFilter, region, tag, continent, favoritesOnly, query, sort]);
 
   return (
     <section className="all-places-page">
@@ -87,6 +92,7 @@ export function AllPlaces({
               {filter === 'all' ? 'All' : filter === 'visited' ? 'Visited' : 'Want to visit'}
             </button>
           ))}
+          <button className={favoritesOnly?'active':''} onClick={()=>onFavoritesChange(!favoritesOnly)}><Star/> Favorites</button>
         </div>
         <select value={countryFilter} onChange={(event) => { onCountryChange(event.target.value); setRegion('all'); }} aria-label="Filter by country">
           <option value="all">All Countries</option>
@@ -116,7 +122,8 @@ export function AllPlaces({
                   <div className="collection-card-body">
                     <span className={`status-dot ${place.status}`} />
                     <small>{place.status === 'visited' ? 'Visited' : 'Want to visit'}</small>
-                    <h2>{place.name}</h2>
+                    {place.worldWonder&&<span className="card-wonder">● World Wonder</span>}
+                    <h2>{place.favorite&&<Star className="favorite-star"/>}{place.name}</h2>
                     <p className="collection-location">{[place.region, place.country].filter(Boolean).join(', ')}</p>
                     <p className="collection-notes">{place.notes || 'No notes added yet.'}</p>
                     <div className="tags">{place.tags.slice(0, 3).map((item) => <span key={item}>{item}</span>)}</div>

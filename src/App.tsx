@@ -31,6 +31,7 @@ export function App() {
   const [countryFilter, setCountryFilter] = useState('all');
   const [categoryFilter,setCategoryFilter]=useState('all');
   const [continentFilter,setContinentFilter]=useState('all');
+  const [favoritesOnly,setFavoritesOnly]=useState(false);
   const [autoRotate, setAutoRotate] = useState(true);
   const [draft, setDraft] = useState<Partial<TravelPlace>>();
   const [selectedTripId,setSelectedTripId]=useState<string>();
@@ -45,8 +46,9 @@ export function App() {
     .filter((place) => statusFilter === 'all' || place.status === statusFilter)
     .filter((place) => countryFilter === 'all' || (place.countries||[place.country]).includes(countryFilter))
     .filter((place)=>categoryFilter==='all'||place.tags.includes(categoryFilter))
-    .filter((place)=>continentFilter==='all'||place.continent===continentFilter),
-  [places, statusFilter, countryFilter,categoryFilter,continentFilter]);
+    .filter((place)=>continentFilter==='all'||place.continent===continentFilter)
+    .filter((place)=>!favoritesOnly||place.favorite===true),
+  [places, statusFilter, countryFilter,categoryFilter,continentFilter,favoritesOnly]);
   const globePlaces=useMemo(()=>visiblePlaces.filter(place=>layers.destinations&&(place.status==='visited'?layers.visited:layers.wantToVisit)),[visiblePlaces,layers.destinations,layers.visited,layers.wantToVisit]);
   useEffect(()=>{const exit=()=>{if(!document.fullscreenElement)setImmersive(false)};document.addEventListener('fullscreenchange',exit);const key=(event:KeyboardEvent)=>{if(event.key==='Escape')setImmersive(false)};window.addEventListener('keydown',key);return()=>{document.removeEventListener('fullscreenchange',exit);window.removeEventListener('keydown',key)}},[]);
 
@@ -119,13 +121,13 @@ export function App() {
       {page === 'globe' ? (
         <>
           <div className="hero-copy"><span>YOUR WORLD, REMEMBERED</span><h1>Explore the places<br />that <i>move you.</i></h1><p>Drag to discover · Scroll to zoom · Click Earth to save</p></div>
-          <div className="legend"><span><i className="visited" />Visited</span><span><i className="want" />Want to visit</span><b>{visiblePlaces.length} destinations</b></div>
+          <div className="legend"><span><i className="visited" />Visited</span><span><i className="want" />Want to visit</span><span><i className="wonder" />World Wonder</span><b>{visiblePlaces.length} destinations</b></div>
           <GlobeControls onReset={() => globe.current?.reset()} onZoom={(amount) => globe.current?.zoom(amount)} auto={autoRotate} onAuto={() => setAutoRotate((value) => !value)} onCenter={() => selected && globe.current?.flyTo(selected.latitude, selected.longitude)} />
           <LayerControl layers={layers} onToggle={toggleLayer}/><button className="random-place" onClick={randomDestination}><Dices/> Random destination</button>
-          <TravelSidebar open={panel === 'places'} onClose={() => setPanel(null)} places={visiblePlaces} onPick={selectGlobePlace} filter={statusFilter} setFilter={setStatusFilter} country={countryFilter} countries={countries} setCountry={setCountryFilter} category={categoryFilter} categories={categories} setCategory={setCategoryFilter} continent={continentFilter} setContinent={setContinentFilter} />
+          <TravelSidebar open={panel === 'places'} onClose={() => setPanel(null)} places={visiblePlaces} onPick={selectGlobePlace} filter={statusFilter} setFilter={setStatusFilter} favoritesOnly={favoritesOnly} setFavoritesOnly={setFavoritesOnly} country={countryFilter} countries={countries} setCountry={setCountryFilter} category={categoryFilter} categories={categories} setCategory={setCategoryFilter} continent={continentFilter} setContinent={setContinentFilter} />
         </>
       ) : page==='all-places' ? (
-        <AllPlaces places={places} statusFilter={statusFilter} countryFilter={countryFilter} countries={countries} onStatusChange={setStatusFilter} onCountryChange={setCountryFilter} onOpen={setSelected} onViewGlobe={openOnGlobe} />
+        <AllPlaces places={places} statusFilter={statusFilter} countryFilter={countryFilter} countries={countries} favoritesOnly={favoritesOnly} onFavoritesChange={setFavoritesOnly} onStatusChange={setStatusFilter} onCountryChange={setCountryFilter} onOpen={setSelected} onViewGlobe={openOnGlobe} />
       ) : <TripsPage trips={trips} places={places} selectedId={selectedTripId} onSelect={id=>{setSelectedTripId(id)}} onCreate={createTrip} onUpdate={updateTrip} onDelete={id=>{removeTrip(id);setSelectedTripId(undefined)}} onViewStop={openOnGlobe}/>}
 
       {selected && panel !== 'add' && <PlaceDetails place={selected} trips={trips} onUpdate={patch=>{update(selected.id,patch);setSelected({...selected,...patch})}} onClose={() => setSelected(undefined)} onDelete={() => { remove(selected.id); setSelected(undefined); }} onEdit={() => startAdd(selected)} onToggle={() => { const status = selected.status === 'visited' ? 'want-to-visit' : 'visited'; update(selected.id, { status, visitedDate: status === 'visited' ? new Date().toISOString().slice(0, 10) : undefined }); setSelected({ ...selected, status }); }} />}

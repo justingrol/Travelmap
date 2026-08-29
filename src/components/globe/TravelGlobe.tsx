@@ -39,7 +39,7 @@ interface Props {
 function createMarker(place: TravelPlace, onSelect: (place: TravelPlace) => void) {
   const root = document.createElement('button');
   root.type = 'button';
-  root.className = `globe-marker ${place.status}`;
+  root.className = `globe-marker ${place.status}${place.worldWonder?' world-wonder':''}`;
   root.setAttribute('aria-label', `Open ${place.name}`);
   root.addEventListener('click', (event) => {
     event.stopPropagation();
@@ -64,6 +64,7 @@ function createMarker(place: TravelPlace, onSelect: (place: TravelPlace) => void
   const description = document.createElement('small');
   description.textContent = `${place.country} · ${place.status === 'visited' ? 'Visited' : 'Bucket list'}`;
   tooltip.append(name, description);
+  if(place.worldWonder){const badge=document.createElement('small');badge.className='wonder-label';badge.textContent='● World Wonder';tooltip.append(badge)}
   root.append(dot, tooltip);
   return root;
 }
