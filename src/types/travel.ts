@@ -6,7 +6,7 @@ export interface TransportationInfo { standardCar?:boolean; awdRecommended?:bool
 export interface VisitGuide { whyVisit?:string; bestMonths?:string[]; goodMonths?:string[]; peakSeason?:string; lowSeason?:string; recommendedDuration?:string; minimumDuration?:string; activities:TravelActivity[]; seasonalConsiderations?:string[]; reservationConsiderations?:string[]; permitConsiderations?:string[]; transportation?:TransportationInfo; equipment?:string[]; accessibility?:string[]; importantToKnow?:string[]; officialSourceName?:string; officialSourceUrl?:string; lastVerified?:string }
 export type BudgetStyle='budget'|'standard'|'comfortable';
 export interface BudgetEstimate { currency:string; travelers:number; nights:number; style:BudgetStyle; isEstimate:boolean; costs:Record<string,number> }
-export interface TravelPlace { id:string; name:string; country:string; region?:string; continent?:string; latitude:number; longitude:number; status:PlaceStatus; priority?:TravelPriority; visitedDate?:string; rating?:number; notes?:string; tags:string[]; photos:TravelPhoto[]; visitGuide?:VisitGuide; budget?:BudgetEstimate; createdAt:string; updatedAt:string }
+export interface TravelPlace { id:string; name:string; country:string; countries?:string[]; aliases?:string[]; destinationType?:'place'|'region'; region?:string; continent?:string; latitude:number; longitude:number; status:PlaceStatus; priority?:TravelPriority; visitedDate?:string; rating?:number; notes?:string; tags:string[]; photos:TravelPhoto[]; visitGuide?:VisitGuide; budget?:BudgetEstimate; createdAt:string; updatedAt:string }
 export type PlaceDraft = Omit<TravelPlace,'id'|'createdAt'|'updatedAt'>;
 export type PlaceFilter = 'all' | PlaceStatus;
 export type TripStatus='planning'|'booked'|'completed';

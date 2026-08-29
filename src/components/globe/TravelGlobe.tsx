@@ -54,6 +54,7 @@ function createMarker(place: TravelPlace, onSelect: (place: TravelPlace) => void
   if (cover) {
     const image = document.createElement('img');
     image.src = cover.url;
+    image.loading = 'lazy';
     image.alt = '';
     tooltip.append(image);
   }
@@ -78,7 +79,7 @@ export const TravelGlobe = forwardRef<GlobeHandle, Props>(function TravelGlobe(
   const [hoveredCountry, setHoveredCountry] = useState<CountryBoundary | null>(null);
   const tripStops=(selectedTrip?.stops.map(stop=>allPlaces.find(place=>place.id===stop.placeId)).filter((place):place is TravelPlace=>Boolean(place)))??[];
   const tripRoutes=tripStops.slice(0,-1).map((place,index)=>({startLat:place.latitude,startLng:place.longitude,endLat:tripStops[index+1].latitude,endLng:tripStops[index+1].longitude,name:`${place.name} → ${tripStops[index+1].name}`}));
-  const countryCounts=(name:string)=>allPlaces.filter(place=>place.country===name);
+  const countryCounts=(name:string)=>allPlaces.filter(place=>(place.countries||[place.country]).includes(name));
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver(([entry]) => {

@@ -29,12 +29,13 @@ export function AllPlaces({
   const [query, setQuery] = useState('');
   const [region, setRegion] = useState('all');
   const [tag, setTag] = useState('all');
+  const [continent,setContinent]=useState('all');
   const [sort, setSort] = useState<SortOption>('name');
   const [compareIds,setCompareIds]=useState<string[]>([]);
   const [comparing,setComparing]=useState(false);
 
   const regions = useMemo(() => [...new Set(places
-    .filter((place) => countryFilter === 'all' || place.country === countryFilter)
+    .filter((place) => countryFilter === 'all' || (place.countries||[place.country]).includes(countryFilter))
     .map((place) => place.region)
     .filter((value): value is string => Boolean(value)))].sort(), [places, countryFilter]);
   const tags = useMemo(() => [...new Set(places.flatMap((place) => place.tags))].sort(), [places]);
@@ -46,6 +47,7 @@ export function AllPlaces({
       .filter((place) => countryFilter === 'all' || place.country === countryFilter)
       .filter((place) => region === 'all' || place.region === region)
       .filter((place) => tag === 'all' || place.tags.includes(tag))
+      .filter((place)=>continent==='all'||place.continent===continent)
       .filter((place) => !normalizedQuery || place.name.toLocaleLowerCase().includes(normalizedQuery))
       .sort((a, b) => {
         if (sort === 'country') return a.country.localeCompare(b.country) || a.name.localeCompare(b.name);
@@ -53,7 +55,7 @@ export function AllPlaces({
         if (sort === 'status') return a.status.localeCompare(b.status) || a.name.localeCompare(b.name);
         return a.name.localeCompare(b.name);
       });
-  }, [places, statusFilter, countryFilter, region, tag, query, sort]);
+  }, [places, statusFilter, countryFilter, region, tag, continent, query, sort]);
 
   return (
     <section className="all-places-page">
@@ -98,6 +100,7 @@ export function AllPlaces({
           <option value="all">All Tags</option>
           {tags.map((item) => <option key={item}>{item}</option>)}
         </select>
+        <select value={continent} onChange={event=>setContinent(event.target.value)} aria-label="Filter by continent"><option value="all">All Continents</option>{['North America','South America','Europe','Africa','Asia','Oceania','Antarctica'].map(item=><option key={item}>{item}</option>)}</select>
         <label className="sort-select"><ArrowUpDown /><select value={sort} onChange={(event) => setSort(event.target.value as SortOption)} aria-label="Sort destinations"><option value="name">Name A–Z</option><option value="country">Country</option><option value="recent">Recently added</option><option value="status">Travel status</option></select></label>
       </div>
 
@@ -109,7 +112,7 @@ export function AllPlaces({
               <article className="collection-card" key={place.id}>
                 <button className={`compare-toggle ${compareIds.includes(place.id)?'active':''}`} onClick={()=>setCompareIds(ids=>ids.includes(place.id)?ids.filter(id=>id!==place.id):ids.length<4?[...ids,place.id]:ids)}>{compareIds.includes(place.id)?'✓ Selected':'+ Compare'}</button>
                 <button className="collection-card-main" onClick={() => onOpen(place)} aria-label={`Open details for ${place.name}`}>
-                  <div className="collection-photo">{cover ? <img src={cover.url} alt={place.name} loading="lazy" /> : <MapPin />}</div>
+                  <div className="collection-photo">{cover ? <img src={cover.url} alt={place.name} loading="lazy" onError={event=>{event.currentTarget.onerror=null;event.currentTarget.src='/image-fallback.svg'}} /> : <img src="/image-fallback.svg" alt="" />}</div>
                   <div className="collection-card-body">
                     <span className={`status-dot ${place.status}`} />
                     <small>{place.status === 'visited' ? 'Visited' : 'Want to visit'}</small>

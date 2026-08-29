@@ -30,21 +30,23 @@ export function App() {
   const [statusFilter, setStatusFilter] = useState<PlaceFilter>('all');
   const [countryFilter, setCountryFilter] = useState('all');
   const [categoryFilter,setCategoryFilter]=useState('all');
+  const [continentFilter,setContinentFilter]=useState('all');
   const [autoRotate, setAutoRotate] = useState(true);
   const [draft, setDraft] = useState<Partial<TravelPlace>>();
   const [selectedTripId,setSelectedTripId]=useState<string>();
   const [immersive,setImmersive]=useState(false);
 
   const countries = useMemo(
-    () => [...new Set(places.map((place) => place.country))].sort(),
+    () => [...new Set(places.flatMap((place) => place.countries||[place.country]))].sort(),
     [places],
   );
   const categories=useMemo(()=>[...new Set(places.flatMap(place=>place.tags))].sort(),[places]);
   const visiblePlaces = useMemo(() => places
     .filter((place) => statusFilter === 'all' || place.status === statusFilter)
-    .filter((place) => countryFilter === 'all' || place.country === countryFilter)
-    .filter((place)=>categoryFilter==='all'||place.tags.includes(categoryFilter)),
-  [places, statusFilter, countryFilter,categoryFilter]);
+    .filter((place) => countryFilter === 'all' || (place.countries||[place.country]).includes(countryFilter))
+    .filter((place)=>categoryFilter==='all'||place.tags.includes(categoryFilter))
+    .filter((place)=>continentFilter==='all'||place.continent===continentFilter),
+  [places, statusFilter, countryFilter,categoryFilter,continentFilter]);
   const globePlaces=useMemo(()=>visiblePlaces.filter(place=>layers.destinations&&(place.status==='visited'?layers.visited:layers.wantToVisit)),[visiblePlaces,layers.destinations,layers.visited,layers.wantToVisit]);
   useEffect(()=>{const exit=()=>{if(!document.fullscreenElement)setImmersive(false)};document.addEventListener('fullscreenchange',exit);const key=(event:KeyboardEvent)=>{if(event.key==='Escape')setImmersive(false)};window.addEventListener('keydown',key);return()=>{document.removeEventListener('fullscreenchange',exit);window.removeEventListener('keydown',key)}},[]);
 
@@ -120,7 +122,7 @@ export function App() {
           <div className="legend"><span><i className="visited" />Visited</span><span><i className="want" />Want to visit</span><b>{visiblePlaces.length} destinations</b></div>
           <GlobeControls onReset={() => globe.current?.reset()} onZoom={(amount) => globe.current?.zoom(amount)} auto={autoRotate} onAuto={() => setAutoRotate((value) => !value)} onCenter={() => selected && globe.current?.flyTo(selected.latitude, selected.longitude)} />
           <LayerControl layers={layers} onToggle={toggleLayer}/><button className="random-place" onClick={randomDestination}><Dices/> Random destination</button>
-          <TravelSidebar open={panel === 'places'} onClose={() => setPanel(null)} places={visiblePlaces} onPick={selectGlobePlace} filter={statusFilter} setFilter={setStatusFilter} country={countryFilter} countries={countries} setCountry={setCountryFilter} category={categoryFilter} categories={categories} setCategory={setCategoryFilter} />
+          <TravelSidebar open={panel === 'places'} onClose={() => setPanel(null)} places={visiblePlaces} onPick={selectGlobePlace} filter={statusFilter} setFilter={setStatusFilter} country={countryFilter} countries={countries} setCountry={setCountryFilter} category={categoryFilter} categories={categories} setCategory={setCategoryFilter} continent={continentFilter} setContinent={setContinentFilter} />
         </>
       ) : page==='all-places' ? (
         <AllPlaces places={places} statusFilter={statusFilter} countryFilter={countryFilter} countries={countries} onStatusChange={setStatusFilter} onCountryChange={setCountryFilter} onOpen={setSelected} onViewGlobe={openOnGlobe} />

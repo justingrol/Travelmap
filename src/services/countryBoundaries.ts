@@ -46,10 +46,11 @@ export async function loadCountryBoundaries(signal?: AbortSignal): Promise<Count
 }
 
 export function getCountryName(boundary: CountryBoundary): string {
-  return boundary.properties.ADMIN
+  const name=boundary.properties.ADMIN
     ?? boundary.properties.NAME
     ?? boundary.properties.SOVEREIGNT
     ?? 'Unknown country';
+  return ({'United States of America':'United States',Turkey:'Türkiye'} as Record<string,string>)[name]??name;
 }
 
 export function getCountryLabelPosition(boundary:CountryBoundary){return{lat:Number(boundary.properties.LABEL_Y)||0,lng:Number(boundary.properties.LABEL_X)||0}}
