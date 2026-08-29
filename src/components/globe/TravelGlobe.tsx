@@ -19,6 +19,10 @@ export interface GlobeHandle {
   reset: () => void;
 }
 
+const GLOBE_RADIUS = 100;
+const MIN_CAMERA_DISTANCE = 101.5;
+const MIN_ALTITUDE = (MIN_CAMERA_DISTANCE / GLOBE_RADIUS) - 1;
+
 interface Props {
   places: TravelPlace[];
   autoRotate: boolean;
@@ -97,10 +101,14 @@ export const TravelGlobe = forwardRef<GlobeHandle, Props>(function TravelGlobe(
     controls.autoRotateSpeed = 0.35;
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
+    controls.enableZoom = true;
+    controls.zoomSpeed = 0.8;
+    controls.minDistance = MIN_CAMERA_DISTANCE;
+    controls.maxDistance = 450;
   }, [autoRotate]);
 
   useImperativeHandle(ref, () => ({
-    flyTo(lat, lng, altitude = 1.65) {
+    flyTo(lat, lng, altitude = 0.22) {
       globe.current?.pointOfView({ lat, lng, altitude }, 1300);
     },
     zoom(delta) {
@@ -109,7 +117,7 @@ export const TravelGlobe = forwardRef<GlobeHandle, Props>(function TravelGlobe(
       globe.current?.pointOfView(
         {
           ...currentView,
-          altitude: Math.max(0.7, Math.min(3.5, currentView.altitude + delta)),
+          altitude: Math.max(MIN_ALTITUDE, Math.min(3.5, currentView.altitude + delta)),
         },
         300,
       );
