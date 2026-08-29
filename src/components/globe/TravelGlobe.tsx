@@ -8,10 +8,11 @@ import {
 import Globe, { type GlobeMethods } from 'react-globe.gl';
 import {
   getCountryName,
+  getCountryLabelPosition,
   loadCountryBoundaries,
   type CountryBoundary,
 } from '../../services/countryBoundaries';
-import type { TravelPlace } from '../../types/travel';
+import type { MapLayers, TravelPlace, TravelTrip } from '../../types/travel';
 
 export interface GlobeHandle {
   flyTo: (lat: number, lng: number, altitude?: number) => void;
@@ -30,6 +31,9 @@ interface Props {
   onSelect: (place: TravelPlace) => void;
   onEarthClick: (lat: number, lng: number) => void;
   onInteraction: () => void;
+  layers:MapLayers;
+  selectedTrip?:TravelTrip;
+  allPlaces:TravelPlace[];
 }
 
 function createMarker(place: TravelPlace, onSelect: (place: TravelPlace) => void) {
@@ -64,7 +68,7 @@ function createMarker(place: TravelPlace, onSelect: (place: TravelPlace) => void
 }
 
 export const TravelGlobe = forwardRef<GlobeHandle, Props>(function TravelGlobe(
-  { places, autoRotate, selected, onSelect, onEarthClick, onInteraction },
+  { places, autoRotate, selected, onSelect, onEarthClick, onInteraction, layers, selectedTrip, allPlaces },
   ref,
 ) {
   const globe = useRef<GlobeMethods | undefined>(undefined);
@@ -72,6 +76,9 @@ export const TravelGlobe = forwardRef<GlobeHandle, Props>(function TravelGlobe(
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [countries, setCountries] = useState<CountryBoundary[]>([]);
   const [hoveredCountry, setHoveredCountry] = useState<CountryBoundary | null>(null);
+  const tripStops=(selectedTrip?.stops.map(stop=>allPlaces.find(place=>place.id===stop.placeId)).filter((place):place is TravelPlace=>Boolean(place)))??[];
+  const tripRoutes=tripStops.slice(0,-1).map((place,index)=>({startLat:place.latitude,startLng:place.longitude,endLat:tripStops[index+1].latitude,endLng:tripStops[index+1].longitude,name:`${place.name} → ${tripStops[index+1].name}`}));
+  const countryCounts=(name:string)=>allPlaces.filter(place=>place.country===name);
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver(([entry]) => {
@@ -137,17 +144,16 @@ export const TravelGlobe = forwardRef<GlobeHandle, Props>(function TravelGlobe(
         globeImageUrl="https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
         bumpImageUrl="https://unpkg.com/three-globe/example/img/earth-topology.png"
         atmosphereColor="#58a6ff"
+        showAtmosphere={layers.atmosphere}
         atmosphereAltitude={0.18}
-        polygonsData={countries}
+        polygonsData={layers.countryBorders||layers.visitedCountries||layers.wishlistCountries?countries:[]}
         polygonAltitude={(boundary: object) => boundary === hoveredCountry ? 0.008 : 0.006}
-        polygonCapColor={(boundary: object) => boundary === hoveredCountry
-          ? 'rgba(126, 220, 202, 0.10)'
-          : 'rgba(255, 255, 255, 0.005)'}
+        polygonCapColor={(boundary: object) => {const matches=countryCounts(getCountryName(boundary as CountryBoundary));const visited=matches.some(place=>place.status==='visited'),wishlist=matches.some(place=>place.status==='want-to-visit');if(boundary===hoveredCountry)return'rgba(126,220,202,.14)';if(visited&&layers.visitedCountries)return'rgba(55,210,165,.10)';if(wishlist&&layers.wishlistCountries)return'rgba(255,177,69,.08)';return'rgba(255,255,255,.005)'}}
         polygonSideColor={() => 'rgba(0, 0, 0, 0)'}
-        polygonStrokeColor={(boundary: object) => boundary === hoveredCountry
+        polygonStrokeColor={(boundary: object) => !layers.countryBorders?'rgba(0,0,0,0)':boundary === hoveredCountry
           ? 'rgba(185, 246, 234, 0.92)'
           : 'rgba(210, 226, 238, 0.42)'}
-        polygonLabel={(boundary: object) => getCountryName(boundary as CountryBoundary)}
+        polygonLabel={(boundary: object) => {const name=getCountryName(boundary as CountryBoundary),matches=countryCounts(name);return`<b>${name}</b><br/>Visited places: ${matches.filter(place=>place.status==='visited').length}<br/>Wishlist: ${matches.filter(place=>place.status==='want-to-visit').length}`}}
         polygonsTransitionDuration={180}
         onPolygonHover={(boundary: object | null) => {
           setHoveredCountry(boundary as CountryBoundary | null);
@@ -157,7 +163,21 @@ export const TravelGlobe = forwardRef<GlobeHandle, Props>(function TravelGlobe(
           _event: MouseEvent,
           { lat, lng }: { lat: number; lng: number },
         ) => onEarthClick(lat, lng)}
-        htmlElementsData={places}
+        labelsData={layers.countryNames?countries.filter(country=>country.properties.LABEL_X!==undefined):[]}
+        labelLat={(country:object)=>getCountryLabelPosition(country as CountryBoundary).lat}
+        labelLng={(country:object)=>getCountryLabelPosition(country as CountryBoundary).lng}
+        labelText={(country:object)=>getCountryName(country as CountryBoundary)}
+        labelColor={()=> 'rgba(230,240,248,.72)'}
+        labelSize={0.55}
+        labelDotRadius={0}
+        labelAltitude={0.012}
+        arcsData={layers.tripRoutes?tripRoutes:[]}
+        arcColor={()=>['rgba(95,225,193,.2)','rgba(95,225,193,.9)']}
+        arcDashLength={0.35}
+        arcDashGap={0.18}
+        arcDashAnimateTime={1800}
+        arcAltitudeAutoScale={0.22}
+        htmlElementsData={[...places,...(layers.tripStops?tripStops.filter(stop=>!places.some(place=>place.id===stop.id)):[])]}
         htmlLat="latitude"
         htmlLng="longitude"
         htmlAltitude={0.025}

@@ -4,6 +4,8 @@ export interface CountryBoundary {
     ADMIN?: string;
     NAME?: string;
     SOVEREIGNT?: string;
+    LABEL_X?: number;
+    LABEL_Y?: number;
   };
   geometry: {
     type: string;
@@ -49,3 +51,5 @@ export function getCountryName(boundary: CountryBoundary): string {
     ?? boundary.properties.SOVEREIGNT
     ?? 'Unknown country';
 }
+
+export function getCountryLabelPosition(boundary:CountryBoundary){return{lat:Number(boundary.properties.LABEL_Y)||0,lng:Number(boundary.properties.LABEL_X)||0}}

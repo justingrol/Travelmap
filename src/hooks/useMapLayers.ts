@@ -1,0 +1,3 @@
+import{useEffect,useState}from'react';import type{MapLayers}from'../types/travel';
+const KEY='travel-globe.layers.v1';export const defaultLayers:MapLayers={countryBorders:true,countryNames:false,destinations:true,wantToVisit:true,visited:true,visitedCountries:true,wishlistCountries:true,tripRoutes:true,tripStops:true,atmosphere:true};
+export function useMapLayers(){const[layers,setLayers]=useState<MapLayers>(()=>{try{return{...defaultLayers,...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{return defaultLayers}});useEffect(()=>{try{localStorage.setItem(KEY,JSON.stringify(layers))}catch{/* Preferences remain active for this session. */}},[layers]);return{layers,toggle:(key:keyof MapLayers)=>setLayers(value=>({...value,[key]:!value[key]}))}}

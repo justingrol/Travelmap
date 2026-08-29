@@ -1,6 +1,7 @@
 import { ArrowUpDown, MapPin, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { PlaceFilter, TravelPlace } from '../../types/travel';
+import { PlaceComparison } from './PlaceComparison';
 
 type SortOption = 'name' | 'country' | 'recent' | 'status';
 
@@ -29,6 +30,8 @@ export function AllPlaces({
   const [region, setRegion] = useState('all');
   const [tag, setTag] = useState('all');
   const [sort, setSort] = useState<SortOption>('name');
+  const [compareIds,setCompareIds]=useState<string[]>([]);
+  const [comparing,setComparing]=useState(false);
 
   const regions = useMemo(() => [...new Set(places
     .filter((place) => countryFilter === 'all' || place.country === countryFilter)
@@ -104,6 +107,7 @@ export function AllPlaces({
             const cover = place.photos.find((photo) => photo.isCover) ?? place.photos[0];
             return (
               <article className="collection-card" key={place.id}>
+                <button className={`compare-toggle ${compareIds.includes(place.id)?'active':''}`} onClick={()=>setCompareIds(ids=>ids.includes(place.id)?ids.filter(id=>id!==place.id):ids.length<4?[...ids,place.id]:ids)}>{compareIds.includes(place.id)?'✓ Selected':'+ Compare'}</button>
                 <button className="collection-card-main" onClick={() => onOpen(place)} aria-label={`Open details for ${place.name}`}>
                   <div className="collection-photo">{cover ? <img src={cover.url} alt={place.name} loading="lazy" /> : <MapPin />}</div>
                   <div className="collection-card-body">
@@ -121,6 +125,8 @@ export function AllPlaces({
           })}
         </div>
       ) : <div className="collection-empty"><MapPin /><h2>No destinations found</h2><p>Reset a filter or try another search.</p></div>}
+      {compareIds.length>=2&&<div className="compare-bar"><span>{compareIds.length} destinations selected</span><button onClick={()=>setComparing(true)}>Compare</button><button onClick={()=>setCompareIds([])}>Clear</button></div>}
+      {comparing&&<PlaceComparison places={places.filter(place=>compareIds.includes(place.id))} onClose={()=>setComparing(false)} onView={onViewGlobe}/>}
     </section>
   );
 }
